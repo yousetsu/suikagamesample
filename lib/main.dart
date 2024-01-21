@@ -6,7 +6,7 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/extensions.dart';
-import 'package:forge2d/forge2d.dart' as forge2d;
+
 ///scale
 double scale = 10;
 ///重力
@@ -76,10 +76,6 @@ class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Wid
   Vector2 topRight = Vector2.zero();
   Vector2 bottomRight = Vector2.zero();
   Vector2 bottomLeft = Vector2.zero();
-  bar underBar = bar(barImage:'underbar.png',gridPosition: Vector2(xStart * widthPer, yEnd * heightPer), xOffset: 0/scale ,xSize: 325/scale *widthPer ,ySize: 10/scale*heightPer);
-  bar rightBar = bar(barImage:'verticalbar.png',gridPosition: Vector2(xStart * widthPer, yStart * heightPer ), xOffset: 0 ,xSize: 10/scale*widthPer ,ySize: 400/scale*heightPer);
-  bar leftBar = bar(barImage:'verticalbar.png',gridPosition: Vector2(xEnd * widthPer, yStart * heightPer), xOffset: 0 ,xSize: 10/scale*widthPer ,ySize: 400/scale*heightPer);
-
   @override
   void dispose() {
   }
@@ -124,13 +120,13 @@ class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Wid
     );
     // ゲームエンジンにコンポーネントを追加
     world.add(backgroundComponent);
-
      ///下のバー
-    await world.add(underBar);
+    await world.add(underBar(gridPosition: Vector2(xStart * widthPer, yEnd * heightPer), xOffset: 0/scale ,xSize: 325/scale *widthPer ,ySize: 10/scale*heightPer));
     ///左のバー
-    await world.add(leftBar);
+    //await world.add(verticalBar(gridPosition: Vector2(xStart * widthPer, yStart * heightPer ), xOffset: 0 ,xSize: 10/scale*widthPer ,ySize: 400/scale*heightPer));
     ///右のバー
-    await world.add(rightBar);
+  //  await world.add(verticalBar(gridPosition: Vector2(xEnd * widthPer, yStart * heightPer), xOffset: 0 ,xSize: 10/scale*widthPer ,ySize: 400/scale*heightPer)   );
+
   }
   @override
   void onTapDown(TapDownEvent event) {
@@ -253,7 +249,7 @@ class ball extends PositionComponent with HasGameRef<TenkaGame>,ContactCallbacks
     int newType = 1;
     double newSize = 10.0;
     double newHitSize = 10.0;
-    if (other is bar) {
+    if (other is underBar) {
       if(!firstTouch){
         firstTouch = true;
         gameRef.onballCollision();
@@ -320,18 +316,88 @@ class ballBody extends BodyComponent with ContactCallbacks {
     return world.createBody(bodyDef)..createFixture(fixtureDef);
   }
 }
-class bar extends PositionComponent with HasGameRef<TenkaGame>,ContactCallbacks{
+class underBar extends PositionComponent with HasGameRef<TenkaGame>,ContactCallbacks{
   late final SpriteComponent spriteComponent;
   late final BodyComponent bodyComponent;
-  String barImage = "";
   final Vector2 gridPosition;
   double xOffset;
   double xSize;
   double ySize;
   bool isSpriteLoaded = false; // スプライトの読み込み状態を追跡
-  bar({required barImage ,required this.gridPosition, required this.xOffset, required this.xSize, required this.ySize,
+  underBar({required this.gridPosition, required this.xOffset, required this.xSize, required this.ySize,
   }) : super(size: Vector2(xSize ,ySize)) {
-    _loadSprite(barImage).then((_) {
+    _loadSprite('underbar.png').then((_) {
+      _createBody();
+      add(spriteComponent); // スプライトコンポーネントを追加
+      add(bodyComponent); // ボディコンポーネントを追加
+    });
+  }
+  Future<void> _loadSprite(String imagePath) async {
+    debugPrint("_loadSprite");
+    spriteComponent = SpriteComponent()
+      ..sprite = await Sprite.load(imagePath)
+      ..anchor = Anchor.center // ここでアンカーを中心に設定
+      ..size = Vector2(xSize ,ySize);
+    isSpriteLoaded = true; // スプライトの読み込み完了
+  }
+  void _createBody() {
+    debugPrint("_createBody() start gridPosition:$gridPosition");
+    bodyComponent = underBarBody(parentBar: this, posi: gridPosition, xSize: xSize,ySize: ySize,);
+    debugPrint("_createBody() end");
+  }
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (gameRef.gameOver) {
+      return;
+    }
+    if (isSpriteLoaded) {
+      if (isSpriteLoaded && bodyComponent != null) {
+        debugPrint("spriteComponent.position = bodyComponent.body.position start:${bodyComponent.body.position}");
+        spriteComponent.position = bodyComponent.body.position;
+        debugPrint("spriteComponent.position = bodyComponent.body.position end");
+      }
+    }
+  }
+}
+class underBarBody extends BodyComponent with ContactCallbacks {
+
+  final underBar parentBar;
+  Vector2 posi;
+  double xSize;
+  double ySize;
+  underBarBody({required this.parentBar, required this.posi, required this.xSize,required this.ySize}){
+    opacity = 0.0 ;
+  }
+  @override
+  Body createBody() {
+
+    debugPrint("posi:$posi");
+    final shape = PolygonShape()..setAsBox(xSize/2, ySize/2,Vector2(xSize/2,ySize/2,),0);
+    final fixtureDef = FixtureDef(
+      shape,
+      restitution: 0.1, //反発係数
+      friction: 4.0, //摩擦
+    );
+    final bodyDef = BodyDef(
+      userData: parentBar,
+      position: posi, // 初期位置を設定,
+      type: BodyType.static,
+    );
+    return world.createBody(bodyDef)..createFixture(fixtureDef);
+  }
+}
+class verticalBar extends PositionComponent with HasGameRef<TenkaGame>,ContactCallbacks{
+  late final SpriteComponent spriteComponent;
+  late final BodyComponent bodyComponent;
+  final Vector2 gridPosition;
+  double xOffset;
+  double xSize;
+  double ySize;
+  bool isSpriteLoaded = false; // スプライトの読み込み状態を追跡
+  verticalBar({required this.gridPosition, required this.xOffset, required this.xSize, required this.ySize,
+  }) : super(size: Vector2(xSize ,ySize)) {
+    _loadSprite('verticalbar.png').then((_) {
       _createBody();
       add(spriteComponent); // スプライトコンポーネントを追加
       add(bodyComponent); // ボディコンポーネントを追加
@@ -344,24 +410,24 @@ class bar extends PositionComponent with HasGameRef<TenkaGame>,ContactCallbacks{
     isSpriteLoaded = true; // スプライトの読み込み完了
   }
   void _createBody() {
-    bodyComponent = barBody(parent: this, posi: gridPosition, xSize: xSize,ySize: ySize,);
+    bodyComponent = verticalBarBody(parent: this, posi: gridPosition, xSize: xSize,ySize: ySize,);
   }
   @override
   void update(double dt) {
     super.update(dt);
-     if (isSpriteLoaded) {
-       if (isSpriteLoaded && bodyComponent != null) {
+    if (isSpriteLoaded) {
+      if (isSpriteLoaded && bodyComponent != null  && bodyComponent.body.isActive) {
         spriteComponent.position = bodyComponent.body.position;
-       }
-     }
-   }
+      }
+    }
+  }
 }
-class barBody extends BodyComponent with ContactCallbacks {
-  final bar parent; // ballのインスタンスを保持
+class verticalBarBody extends BodyComponent with ContactCallbacks {
+  final verticalBar parent; // ballのインスタンスを保持
   Vector2 posi;
   double xSize;
   double ySize;
-  barBody({required this.parent, required this.posi, required this.xSize,required this.ySize}){
+  verticalBarBody({required this.parent, required this.posi, required this.xSize,required this.ySize}){
     opacity = 0.0 ;
   }
   @override
@@ -380,7 +446,6 @@ class barBody extends BodyComponent with ContactCallbacks {
     return world.createBody(bodyDef)..createFixture(fixtureDef);
   }
 }
-
 double calcTypeSize(int type, double per){
   double typeSize = 0.0;
   switch (type) {
