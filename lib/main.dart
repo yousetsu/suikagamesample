@@ -37,9 +37,7 @@ void main() async{
   final BallGame _game = BallGame();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])//横回転禁止
       .then((_) {
-    runApp(
-      GameWidget<BallGame>(game: _game,),
-    );
+    runApp(GameWidget<BallGame>(game: _game,),);
   });
 }
 ///------------------------------------------------------
@@ -49,14 +47,12 @@ class GameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GameWidget(
-        game: BallGame(),
-      ),
+      body: GameWidget(game: BallGame(),),
     );
   }
 }
 ///------------------------------------------------------
-///GameScreen
+///BallGame本体
 ///------------------------------------------------------
 class BallGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,WidgetsBindingObserver{
   BallGame() : super(zoom: scale,gravity: Vector2(0, dbGravity));
@@ -101,13 +97,11 @@ class BallGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Widg
     ///背景表示
     final bgSprite = await loadSprite('background.png');
     final backgroundSize = canvasSize; // canvasSizeはBaseGameクラスに由来する
-    // 画面全体に画像を表示するSpriteComponentを作成
     final backgroundComponent = SpriteComponent(
       sprite: bgSprite,
       position: topLeft,
       size: backgroundSize / scale,
     );
-    // ゲームエンジンにコンポーネントを追加
     world.add(backgroundComponent);
      ///下のバー
     await world.add(underBar(gridPosition: Vector2(xStart * widthPer, yEnd * heightPer), xOffset: 0/scale ,xSize: 325/scale *widthPer ,ySize: 10/scale*heightPer));
@@ -115,7 +109,6 @@ class BallGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Widg
     await world.add(verticalBar(gridPosition: Vector2(xStart * widthPer, yStart * heightPer ), xOffset: 0 ,xSize: 10/scale*widthPer ,ySize: 400/scale*heightPer));
     ///右のバー
     await world.add(verticalBar(gridPosition: Vector2(xEnd * widthPer, yStart * heightPer), xOffset: 0 ,xSize: 10/scale*widthPer ,ySize: 400/scale*heightPer)   );
-
   }
   @override
   void onTapDown(TapDownEvent event) {
@@ -141,7 +134,6 @@ class BallGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Widg
         }
         world.add(ball(posi:Vector2(xPosi, yDrop*heightPer), type:firstType, typeSize: typeSize, hitSize: hitSize, speed:   firstSpeed, firstTouch:  false));
         tapOK = false;
-
         ///次のballを決定する
         firstType = secondType;
         secondType = rng.nextInt(randomNum) + starRandomNum;
@@ -170,6 +162,9 @@ class BallGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Widg
     tapOK = true;
   }
 }
+///------------------------------------------------------
+///Ballオブジェクト
+///------------------------------------------------------
 class ball extends PositionComponent with HasGameRef<BallGame>,ContactCallbacks{
   late final SpriteComponent spriteComponent;
   late final BodyComponent bodyComponent;
@@ -260,6 +255,9 @@ class ball extends PositionComponent with HasGameRef<BallGame>,ContactCallbacks{
     }
   }
 }
+///------------------------------------------------------
+///Ballの物体設定
+///------------------------------------------------------
 class ballBody extends BodyComponent with ContactCallbacks {
   final ball parentball; // ballのインスタンスを保持
   final Vector2 posi;
@@ -298,7 +296,9 @@ class ballBody extends BodyComponent with ContactCallbacks {
     return world.createBody(bodyDef)..createFixture(fixtureDef);
   }
 }
-
+///------------------------------------------------------
+///下のバー
+///------------------------------------------------------
 class underBar extends SpriteComponent with HasGameRef<BallGame> {
   late forge2d.Body body; // Forge2DのBodyオブジェクト
   final Vector2 gridPosition;
@@ -306,21 +306,13 @@ class underBar extends SpriteComponent with HasGameRef<BallGame> {
   double xSize;
   double ySize;
   final Vector2 velocity = Vector2.zero();
-
-  underBar({
-    required this.gridPosition,
-    required this.xOffset,
-    required this.xSize,
-    required this.ySize,
+  underBar({required this.gridPosition, required this.xOffset, required this.xSize, required this.ySize,
   }) : super(size: Vector2(xSize ,ySize)); // 325,10
-
   @override
   void onLoad() {
     final platformImage = game.images.fromCache('underbar.png');
     sprite = Sprite(platformImage);
     position = Vector2(gridPosition.x ,gridPosition.y);
-
-    // Forge2D WorldにBodyを追加
     final bodyDef = forge2d.BodyDef()
       ..type = forge2d.BodyType.static
       ..position = forge2d.Vector2(position.x, position.y) // 初期位置を設定
@@ -334,6 +326,9 @@ class underBar extends SpriteComponent with HasGameRef<BallGame> {
     body.createFixture(fixtureDef);
   }
 }
+///------------------------------------------------------
+///左右のバー
+///------------------------------------------------------
 class verticalBar extends SpriteComponent
     with HasGameRef<BallGame> {
   late forge2d.Body body; // Forge2DのBodyオブジェクト
@@ -381,13 +376,13 @@ double calcTypeSize(int type, double per){
 String getImagePNG(int type){
   String strImage = '';
   switch (type) {
-    case 1: // value1に対する処理
+    case 1:
       strImage = '01.png';
       break;
-    case 2: // value2に対する処理
+    case 2:
       strImage = '02.png';
       break;
-    case 3: // value2に対する処理
+    case 3:
       strImage = '03.png';
       break;
     default:
