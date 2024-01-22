@@ -7,11 +7,11 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/extensions.dart';
 import 'package:forge2d/forge2d.dart' as forge2d;
-
-///scale
-double scale = 10;
-///重力
-double dbGravity = 20.0 ;//9.8
+///------------------------------------------------------
+///グローバル変数
+///------------------------------------------------------
+double scale = 10;//スケール
+double dbGravity = 20.0 ;//重力
 double width = 0;
 double height = 0;
 double widthBase = 392.0;
@@ -19,41 +19,47 @@ double heightBase = 826.0;
 double widthPer = 1;
 double heightPer = 1;
 double allPer = 1;
-double firstSpeed = 40;
+double firstSpeed = 40;//落とすときの初速
 double LineY = -135/scale;//境界線 （落とす目安）
 double xStart = -171/scale;
 double xEnd = 144/scale;
 double yStart = -150/scale;
 double yEnd = 250/scale;
 double yDrop = LineY - (50/scale); //落とす位置
-
 int starRandomNum = 1;
 int randomNum = 2;
 double certainTime = 0.5;//落とす待ち時間
-
+///------------------------------------------------------
+///メイン関数
+///------------------------------------------------------
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  final TenkaGame _game = TenkaGame();
+  final BallGame _game = BallGame();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])//横回転禁止
       .then((_) {
     runApp(
-      GameWidget<TenkaGame>(game: _game,),
+      GameWidget<BallGame>(game: _game,),
     );
   });
 }
+///------------------------------------------------------
+///GameScreen
+///------------------------------------------------------
 class GameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: GameWidget(
-        game: TenkaGame(),
+        game: BallGame(),
       ),
     );
   }
 }
-
-class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,WidgetsBindingObserver{
-  TenkaGame() : super(zoom: scale,gravity: Vector2(0, dbGravity));
+///------------------------------------------------------
+///GameScreen
+///------------------------------------------------------
+class BallGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,WidgetsBindingObserver{
+  BallGame() : super(zoom: scale,gravity: Vector2(0, dbGravity));
   final List<ball> ballToRemove = [];
   final List<ball> ballToAdd = [];
   List<ball> allballs = [];
@@ -61,13 +67,6 @@ class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Wid
   bool tapOK = true;
   int firstType = 1;
   int secondType = 1;
-  late TextComponent scoreText;
-  int score = 0;
-  late TextComponent hiScoreText;
-  int hiScore = 0;
-  late TextComponent rankText;
-  late TextComponent firstText;
-  late TextComponent secondText;
   late Offset position;
   double touchX = 0.0;
   double touchY = 0.0;
@@ -75,13 +74,6 @@ class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Wid
   Vector2 topRight = Vector2.zero();
   Vector2 bottomRight = Vector2.zero();
   Vector2 bottomLeft = Vector2.zero();
-  @override
-  void dispose() {
-  }
-  ///バックグラウンドでBGM停止
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-  }
   @override
   void onGameResize(Vector2 gameSize) {
     super.onGameResize(gameSize);
@@ -91,9 +83,7 @@ class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Wid
     widthPer = screenWidth / widthBase;
     heightPer = screenHeight / heightBase;
     allPer =  (widthPer + heightPer)/2;
-    // 縦横比を使用する処理
   }
-  late final CameraComponent cameraComponent;
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -180,7 +170,7 @@ class TenkaGame extends Forge2DGame with TapCallbacks,HasCollisionDetection ,Wid
     tapOK = true;
   }
 }
-class ball extends PositionComponent with HasGameRef<TenkaGame>,ContactCallbacks{
+class ball extends PositionComponent with HasGameRef<BallGame>,ContactCallbacks{
   late final SpriteComponent spriteComponent;
   late final BodyComponent bodyComponent;
   final Vector2 posi;
@@ -309,7 +299,7 @@ class ballBody extends BodyComponent with ContactCallbacks {
   }
 }
 
-class underBar extends SpriteComponent with HasGameRef<TenkaGame> {
+class underBar extends SpriteComponent with HasGameRef<BallGame> {
   late forge2d.Body body; // Forge2DのBodyオブジェクト
   final Vector2 gridPosition;
   double xOffset;
@@ -336,7 +326,6 @@ class underBar extends SpriteComponent with HasGameRef<TenkaGame> {
       ..position = forge2d.Vector2(position.x, position.y) // 初期位置を設定
       ..allowSleep = false;
     body = gameRef.world.createBody(bodyDef);
-
     final shape = PolygonShape()..setAsBox(xSize/2, ySize/2,Vector2(xSize/2,ySize/2,),0);
     final fixtureDef = FixtureDef(shape)
       ..restitution = 0.1
@@ -346,35 +335,25 @@ class underBar extends SpriteComponent with HasGameRef<TenkaGame> {
   }
 }
 class verticalBar extends SpriteComponent
-    with HasGameRef<TenkaGame> {
-
+    with HasGameRef<BallGame> {
   late forge2d.Body body; // Forge2DのBodyオブジェクト
   final Vector2 gridPosition;
   double xOffset;
   double xSize;
   double ySize;
   final Vector2 velocity = Vector2.zero();
-  verticalBar({
-    required this.gridPosition,
-    required this.xOffset,
-    required this.xSize,
-    required this.ySize,
+  verticalBar({required this.gridPosition, required this.xOffset, required this.xSize, required this.ySize,
   }) : super(size: Vector2(xSize ,ySize)); //10,400
-
   @override
   void onLoad() {
     final platformImage = game.images.fromCache('verticalbar.png');
     sprite = Sprite(platformImage);
     position = Vector2(gridPosition.x ,gridPosition.y);
-
-    // Forge2D WorldにBodyを追加
     final bodyDef = forge2d.BodyDef()
       ..type = forge2d.BodyType.static
       ..position = forge2d.Vector2(position.x, position.y) // 初期位置を設定
       ..allowSleep = false;
     body = gameRef.world.createBody(bodyDef);
-
-    // final shape = PolygonShape()..setAsBoxXY(300, 5);
     final shape = PolygonShape()..setAsBox(xSize/2, ySize/2,Vector2(xSize/2, ySize/2),0);
     final fixtureDef = FixtureDef(shape)
       ..restitution = 0.01
